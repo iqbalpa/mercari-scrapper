@@ -8,7 +8,9 @@ from bs4 import BeautifulSoup
 LINK = "https://careers.mercari.com/job-categories/engineering/"
 
 # initiate driver
-driver = webdriver.Chrome()
+options = webdriver.ChromeOptions()
+# options.add_argument("--headless")  # Run in headless mode
+driver = webdriver.Chrome(options=options)
 # get the mercari website
 driver.get(LINK)
 print(f"\n========== {driver.title} ==========")
@@ -55,6 +57,8 @@ for i, html in enumerate(html_contents):
         except:
             job_info[attr] = soup.text
     result.append(job_info)
+    if i==2:
+        break
 
 driver.quit()
 
