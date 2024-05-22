@@ -19,15 +19,9 @@ def get_driver():
     driver = webdriver.Chrome(options=options)
     return driver
 
-def extract_job_info(driver, job_element):
+def extract_job_info(driver, title, job_link):
     job_info = {}
     try:
-        soup = BeautifulSoup(job_element, "html.parser")
-        # get the role title
-        role_title = soup.li.a.h4.text
-        # get the link for apply this role
-        job_link = soup.find("a", href=True)["href"]
-        print(job_link)
         # redirect to the apply page
         driver.get(job_link)
         # wait until the page is fully loaded
@@ -39,7 +33,7 @@ def extract_job_info(driver, job_element):
             logger.warning(f"Timed out waiting for page to load: {job_link}")
             return None
         # create job info dictionary
-        job_info["Role Title"] = role_title
+        job_info["Role Title"] = title
         job_info["Link"] = job_link
         span_elements = driver.find_elements(By.TAG_NAME, 'span')
         for span in span_elements:
@@ -52,7 +46,7 @@ def extract_job_info(driver, job_element):
                 job_info[attr] = soup.strong.text
             except:
                 job_info[attr] = soup.text
-        logger.info(f"Extracted job info for: {role_title}")
+        logger.info(f"Extracted job info for: {title}")
         return job_info
     except Exception as e:
         logger.error(f"Error extracting job info: {e}")
@@ -66,14 +60,26 @@ def main():
     li_elements = driver.find_elements(By.XPATH, "//li[@class='job-list__item']")
     logger.info(f"Found {len(li_elements)} job elements")
 
-    result = []
+    # extract the job title and link
+    lst_job = []
     for i, element in enumerate(li_elements):
         element = element.get_attribute("outerHTML")
-        logger.info(f"Processing job {i+1} of {len(li_elements)}")
-        job_info = extract_job_info(driver, element)
+        soup = BeautifulSoup(element, "html.parser")
+        role_title = soup.li.a.h4.text
+        link = soup.find("a", href=True)["href"]
+        lst_job.append({
+            "title": role_title,
+            "link": link
+        })
+    logger.info(f"Got all job links. Total links: {len(lst_job)}")
+
+    result = []
+    for i, job in enumerate(lst_job):
+        logger.info(f"Processing job {i+1} of {len(lst_job)}")
+        job_info = extract_job_info(driver, job["title"], job["link"])
         if job_info:
             result.append(job_info)
-        time.sleep(10)  # Small delay to avoid server overload
+        time.sleep(3)  # Small delay to avoid server overload
         if i==2: break
     
     driver.quit()
