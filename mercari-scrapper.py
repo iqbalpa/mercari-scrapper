@@ -5,22 +5,22 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 
+LINK = "https://careers.mercari.com/job-categories/engineering/"
+
 # initiate driver
 driver = webdriver.Chrome()
-
-# get the website
-driver.get("https://careers.mercari.com/job-categories/engineering/")
+# get the mercari website
+driver.get(LINK)
 print(f"\n========== {driver.title} ==========")
-
 # find the list of <li> elements
 li_elements = driver.find_elements(By.XPATH, "//li[@class='job-list__item']")
-
 # get the html form of elements
 html_contents = []
 for element in li_elements:
     html_content = element.get_attribute("outerHTML")
     html_contents.append(html_content)
 
+result = []
 # iterate over list of jobs
 for i, html in enumerate(html_contents):
     # initiate beautifulsoup object
@@ -29,18 +29,17 @@ for i, html in enumerate(html_contents):
     role_title = soup.li.a.h4.text
     # get the link for apply this role
     link = soup.find("a", href=True)["href"]
-
-    # * redirect to the apply page
+    # redirect to the apply page
     driver.get(link)
-    print(driver.title)
+    # wait until the job page is fully loaded
     timeout = 10
     try:
         span_present = EC.presence_of_element_located((By.TAG_NAME, 'span'))
         WebDriverWait(driver, timeout).until(span_present)
     except TimeoutException:
         print("Timed out waiting for page to load")
-    
-    dict_info = {
+    # create the job info dictionary
+    job_info = {
         "title": role_title,
         "link": link,
     }
@@ -52,10 +51,11 @@ for i, html in enumerate(html_contents):
             continue
         soup = BeautifulSoup(html, "html.parser")
         try:
-            dict_info[attr] = soup.strong.text
+            job_info[attr] = soup.strong.text
         except:
-            dict_info[attr] = soup.text
-    print(dict_info)
-    break
+            job_info[attr] = soup.text
+    result.append(job_info)
 
 driver.quit()
+
+print(result)
